@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Listing } from "@/types/marketplace";
 import { CATEGORIES } from "@/lib/data";
 import { LISTING_TYPES } from "./listing-types";
+import { ListingPreview } from "./listing-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ImagePlus } from "lucide-react";
+import { ArrowLeft, Upload, X } from "lucide-react";
 
 interface ListingFormProps {
   selectedType: string;
@@ -35,13 +36,36 @@ export function ListingForm({
 }: ListingFormProps) {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
-  const [category, setCategory] = useState("Electronics");
+  const [email, setEmail] = useState("");
+  const [category, setCategory] = useState(
+    selectedType === "vehicle"
+      ? "Vehicles"
+      : selectedType === "home"
+      ? "Property Rentals"
+      : "Electronics"
+  );
   const [condition, setCondition] = useState("Like New");
   const [description, setDescription] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const typeTitle =
     LISTING_TYPES.find((t) => t.id === selectedType)?.title || "New listing";
+
+  // Local client-side preview only (ready to hook up to cloud storage later)
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewImage(objectUrl);
+  };
+
+  const clearPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPreviewImage(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,19 +75,14 @@ export function ListingForm({
       id: Date.now(),
       title: title.trim(),
       price: Number(price) || 0,
-      category:
-        selectedType === "vehicle"
-          ? "Vehicles"
-          : selectedType === "home"
-          ? "Property Rentals"
-          : category,
+      category,
       condition,
       location: defaultLocation.trim() || "Palo Alto, CA",
       timeAgo: "Just now",
       description:
         description.trim() || "Newly listed item available for local pickup.",
       image:
-        imageUrl.trim() ||
+        previewImage ||
         "https://unsplash.com",
       seller: {
         name: "You",
@@ -76,80 +95,118 @@ export function ListingForm({
   };
 
   return (
-    <div className="w-full max-w-xl bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
-      <button
-        onClick={onBack}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 mb-4"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        Back to listing types
-      </button>
+    <div className="w-full max-w-[1360px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
 
-      <h2 className="text-xl font-bold text-slate-900 mb-5">{typeTitle}</h2>
+      {/* Left Column: Form Inputs + Photo Upload Box */}
+      <div className="lg:col-span-5 xl:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 mb-3"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to listing types
+        </button>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Title
-          </label>
-          <Input
-            required
-            placeholder="What are you selling?"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
+        <h2 className="text-lg font-bold text-slate-900 mb-4">{typeTitle}</h2>
 
-        <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          {/* Dashed "Add photos" Dropzone (Matches your wireframe) */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Price ($)
-            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  fileInputRef.current?.click();
+                }
+              }}
+              className="group relative h-36 w-full rounded-xl border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50/70 hover:bg-blue-50/40 flex flex-col items-center justify-center cursor-pointer transition-colors overflow-hidden"
+            >
+              {previewImage ? (
+                <>
+                  <img
+                    src={previewImage}
+                    alt="Selected upload"
+                    className="h-full w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearPhoto}
+                    aria-label="Remove photo"
+                    className="absolute top-2 right-2 h-7 w-7 rounded-full bg-slate-900/75 text-white hover:bg-slate-900 flex items-center justify-center transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <div className="flex flex-col items-center text-center px-4">
+                  <div className="h-10 w-10 rounded-full bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center text-slate-600 group-hover:text-blue-600 group-hover:border-blue-200 mb-2 transition-colors">
+                    <Upload className="h-4 w-4" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800">
+                    Add photos
+                  </span>
+                  <span className="text-[11px] text-slate-400 mt-0.5">
+                    Click to select a photo for preview
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Title */}
+          <div>
             <Input
-              type="number"
-              min="0"
-              placeholder="0 for Free"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              required
+              placeholder="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="bg-slate-50/70 focus-visible:bg-white"
             />
           </div>
 
+          {/* Price */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Condition
-            </label>
-            <Select
-                value={condition}
-                onValueChange={(value) => {
-                    if (value) setCondition(value);
-                }}
-                >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="New">New</SelectItem>
-                <SelectItem value="Like New">Like New</SelectItem>
-                <SelectItem value="Good">Good</SelectItem>
-                <SelectItem value="Used">Used</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input
+              type="number"
+              min="0"
+              placeholder="Price ($)"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="bg-slate-50/70 focus-visible:bg-white"
+            />
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
+          {/* Email */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Category
-            </label>
+            <Input
+              type="email"
+              placeholder="Email (optional)"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-slate-50/70 focus-visible:bg-white"
+            />
+          </div>
+
+          {/* Category & Condition */}
+          <div className="grid grid-cols-2 gap-2.5">
             <Select
-                value={category}
-                onValueChange={(value) => {
-                    if (value) setCategory(value);
-                }}
-                >
-              <SelectTrigger>
-                <SelectValue />
+              value={category}
+              onValueChange={(val) => {
+                if (val) setCategory(val);
+              }}
+            >
+              <SelectTrigger className="bg-slate-50/70">
+                <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
                 {CATEGORIES.filter((c) => c.name !== "Browse all").map(
@@ -161,58 +218,78 @@ export function ListingForm({
                 )}
               </SelectContent>
             </Select>
+
+            <Select
+              value={condition}
+              onValueChange={(val) => {
+                if (val) setCondition(val);
+              }}
+            >
+              <SelectTrigger className="bg-slate-50/70">
+                <SelectValue placeholder="Condition" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="New">New</SelectItem>
+                <SelectItem value="Like New">Like New</SelectItem>
+                <SelectItem value="Good">Good</SelectItem>
+                <SelectItem value="Used">Used</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
+          {/* Location */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Location
-            </label>
             <Input
+              placeholder="Location"
               value={defaultLocation}
               onChange={(e) => onLocationChange(e.target.value)}
+              className="bg-slate-50/70 focus-visible:bg-white"
             />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Photo URL (Optional)
-          </label>
-          <div className="relative">
-            <ImagePlus className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="https://..."
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              className="pl-9"
+          {/* Description */}
+          <div>
+            <Textarea
+              rows={3}
+              placeholder="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="resize-none bg-slate-50/70 focus-visible:bg-white"
             />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Description
-          </label>
-          <Textarea
-            rows={3}
-            placeholder="Describe your item's condition, features, or pickup details..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
+          {/* Primary Blue Submit Button (Matches your wireframe's "Next" CTA) */}
+          <div className="pt-1 space-y-2">
+            <Button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 rounded-lg shadow-xs"
+            >
+              Publish Listing
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onCancel}
+              className="w-full h-8 text-xs text-slate-500"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
 
-        <div className="pt-2 flex items-center justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6"
-          >
-            Publish Listing
-          </Button>
-        </div>
-      </form>
+      {/* Right Column: Live Preview Card */}
+      <div className="lg:col-span-7 xl:col-span-8">
+        <ListingPreview
+          title={title}
+          price={price}
+          category={category}
+          condition={condition}
+          location={defaultLocation}
+          description={description}
+          previewImage={previewImage}
+        />
+      </div>
     </div>
   );
 }

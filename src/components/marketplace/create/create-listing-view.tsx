@@ -64,31 +64,37 @@ export function CreateListingView({
       <div className="flex-1 flex flex-col overflow-y-auto">
         <CreateHeader />
 
-        <div className="flex-1 flex items-start justify-center px-6 pt-4 pb-16">
-          {activeTab === "your-listings" ? (
-            <YourListings
-              listings={userListings}
-              onCreateNew={() => {
-                setSelectedType(null);
-                setActiveTab("create");
-              }}
-              onToggleSold={onToggleSold}
-              onDelete={onDeleteListing}
-            />
-          ) : !selectedType ? (
-            <TypeSelector onSelectType={setSelectedType} />
-          ) : (
+        {/* Replaced max-w-6xl with full-width balanced padding */}
+        <div className="flex-2 w-full px-6 sm:px-10 lg:px-12 pt-2 pb-16">
+            {activeTab === "your-listings" ? (
+            <div className="max-w-5xl mx-auto">
+                <YourListings
+                listings={userListings}
+                onCreateNew={() => {
+                    setSelectedType(null);
+                    setActiveTab("create");
+                }}
+                onToggleSold={onToggleSold}
+                onDelete={onDeleteListing}
+                />
+            </div>
+            ) : !selectedType ? (
+            <div className="flex justify-center pt-8">
+                <TypeSelector onSelectType={setSelectedType} />
+            </div>
+            ) : (
             <ListingForm
-              selectedType={selectedType}
-              defaultLocation={location}
-              onLocationChange={setLocation}
-              onBack={() => setSelectedType(null)}
-              onCancel={handleClose}
-              onSubmitListing={handleCreated}
+                selectedType={selectedType}
+                defaultLocation={location}
+                onLocationChange={setLocation}
+                onBack={() => setSelectedType(null)}
+                onCancel={handleClose}
+                onSubmitListing={handleCreated}
             />
-          )}
+            )}
         </div>
-      </div>
+        </div>
+
     </div>
   );
 }
