@@ -53,25 +53,28 @@ export function MoreFiltersPopover({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className={`rounded-full h-8 text-xs ml-auto gap-1.5 transition-colors ${
-            activeCount > 0
-              ? "border-blue-300 bg-blue-50/70 text-blue-700 hover:bg-blue-100/70"
-              : "bg-white text-slate-700 hover:bg-slate-50"
-          }`}
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          <span>More filters</span>
-          {activeCount > 0 && (
-            <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
-              {activeCount}
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className={`rounded-full h-8 text-xs ml-auto gap-1.5 transition-colors ${
+              activeCount > 0
+                ? "border-blue-300 bg-blue-50/70 text-blue-700 hover:bg-blue-100/70"
+                : "bg-white text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            <span>More filters</span>
+            {activeCount > 0 && (
+              <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+                {activeCount}
+              </span>
+            )}
+          </Button>
+        }
+      />
+
 
       <PopoverContent
         align="end"
