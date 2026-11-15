@@ -1,20 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORIES, LISTINGS } from "@/lib/data";
+import { CATEGORIES, LISTINGS as INITIAL_LISTINGS } from "@/lib/data";
 import { Listing, PriceFilter } from "@/types/marketplace";
 import { MarketplaceSidebar } from "@/components/marketplace/market-sidebar";
 import { MarketplaceFilterBar } from "@/components/marketplace/filter-bar";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { MarketplaceEmptyState } from "@/components/marketplace/empty-state";
 import { ListingDetailModal } from "@/components/marketplace/listing-detail-modal";
+import { CreateListingView } from "@/components/marketplace/create/create-listing-view";
 
 export default function MarketplacePage() {
+  const [listings, setListings] = useState<Listing[]>(INITIAL_LISTINGS);
   const [selectedCategory, setSelectedCategory] = useState("Browse all");
   const [searchQuery, setSearchQuery] = useState("");
   const [savedIds, setSavedIds] = useState<number[]>([]);
   const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Filter personal listings created by the current user
+  const userListings = listings.filter((item) => item.seller.name === "You");
+
+  const handleAddListing = (newListing: Listing) => {
+    setListings((prev) => [newListing, ...prev]);
+  };
+
+  const handleToggleSold = (id: number) => {
+    setListings((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? { ...item, status: item.status === "sold" ? "active" : "sold" }
+          : item
+      )
+    );
+  };
+
+  const handleDeleteListing = (id: number) => {
+    setListings((prev) => prev.filter((item) => item.id !== id));
+  };
 
   const toggleSave = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
@@ -29,7 +53,10 @@ export default function MarketplacePage() {
     setPriceFilter("all");
   };
 
-  const filteredListings = LISTINGS.filter((item) => {
+  // Hide sold items from the main public feed while keeping them in "Your listings"
+  const filteredListings = listings.filter((item) => {
+    if (item.status === "sold") return false;
+
     const matchesCategory =
       selectedCategory === "Browse all" || item.category === selectedCategory;
     const matchesSearch =
@@ -51,6 +78,7 @@ export default function MarketplacePage() {
         onSelectCategory={setSelectedCategory}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onOpenCreate={() => setIsCreating(true)}
       />
 
       <main className="flex-1 p-6 lg:p-8">
@@ -80,7 +108,6 @@ export default function MarketplacePage() {
         </div>
       </main>
 
-      {/* Detail Modal when any card is clicked */}
       <ListingDetailModal
         listing={selectedListing}
         onClose={() => setSelectedListing(null)}
@@ -88,6 +115,15 @@ export default function MarketplacePage() {
           selectedListing ? savedIds.includes(selectedListing.id) : false
         }
         onToggleSave={toggleSave}
+      />
+
+      <CreateListingView
+        isOpen={isCreating}
+        userListings={userListings}
+        onClose={() => setIsCreating(false)}
+        onAddListing={handleAddListing}
+        onToggleSold={handleToggleSold}
+        onDeleteListing={handleDeleteListing}
       />
     </div>
   );

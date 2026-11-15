@@ -42,6 +42,7 @@ interface SidebarProps {
   onSelectCategory: (category: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onOpenCreate: () => void;
 }
 
 export function MarketplaceSidebar({
@@ -50,6 +51,7 @@ export function MarketplaceSidebar({
   onSelectCategory,
   searchQuery,
   onSearchChange,
+  onOpenCreate
 }: SidebarProps) {
   return (
     <aside className="w-72 border-r border-slate-200/80 bg-white p-4 flex flex-col shrink-0 sticky top-0 h-screen">
@@ -73,10 +75,14 @@ export function MarketplaceSidebar({
       </div>
 
       {/* Primary Action CTA */}
-      <Button className="w-full mb-5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold rounded-lg shadow-none">
+      <Button
+        onClick={onOpenCreate}
+        className="w-full mb-5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold rounded-lg shadow-none"
+      >
         <Plus className="h-4 w-4 mr-1.5" />
         Create new listing
       </Button>
+
 
       {/* Categories List */}
       <div className="px-2 mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">

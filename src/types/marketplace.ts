@@ -23,4 +23,5 @@ export interface Listing {
   description: string;
   image: string;
   seller: Seller;
+  status?: "active" | "sold";
 }
