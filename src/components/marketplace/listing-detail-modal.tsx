@@ -25,7 +25,7 @@ interface ListingDetailModalProps {
   listing: Listing | null;
   onClose: () => void;
   isSaved: boolean;
-  onToggleSave: (e: React.MouseEvent, id: number) => void;
+  onToggleSave: (e: React.MouseEvent, id: string) => void;
 }
 
 export function ListingDetailModal({

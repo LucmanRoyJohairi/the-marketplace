@@ -15,8 +15,8 @@ import {
 interface YourListingsProps {
   listings: Listing[];
   onCreateNew: () => void;
-  onToggleSold: (id: number) => void;
-  onDelete: (id: number) => void;
+  onToggleSold: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 export function YourListings({

@@ -7,7 +7,7 @@ import { Heart } from "lucide-react";
 interface ListingCardProps {
   item: Listing;
   isSaved: boolean;
-  onToggleSave: (e: React.MouseEvent, id: number) => void;
+  onToggleSave: (e: React.MouseEvent, id: string) => void;
   onSelect: (item: Listing) => void;
 }
 

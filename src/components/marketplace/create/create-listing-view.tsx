@@ -14,8 +14,8 @@ interface CreateListingViewProps {
   userListings: Listing[];
   onClose: () => void;
   onAddListing: (newListing: Listing) => void;
-  onToggleSold: (id: number) => void;
-  onDeleteListing: (id: number) => void;
+  onToggleSold: (id: string) => void;
+  onDeleteListing: (id: string) => void;
 }
 
 export function CreateListingView({

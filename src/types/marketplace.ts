@@ -7,13 +7,14 @@ export interface Category {
 
 export interface Seller {
   name: string;
+  email?: string;
   joinedYear: string;
   rating: string;
   avatar?: string;
 }
 
 export interface Listing {
-  id: number;
+  id: string; // Updated from number to string for UUID
   price: number;
   title: string;
   location: string;
@@ -22,6 +23,7 @@ export interface Listing {
   category: string;
   description: string;
   image: string;
+  sellerEmail: string; // Added to match seller_email column
   seller: Seller;
   status?: "active" | "sold";
 }

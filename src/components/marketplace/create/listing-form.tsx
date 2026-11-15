@@ -72,24 +72,25 @@ export function ListingForm({
     if (!title.trim()) return;
 
     const created: Listing = {
-      id: Date.now(),
-      title: title.trim(),
-      price: Number(price) || 0,
-      category,
-      condition,
-      location: defaultLocation.trim() || "Palo Alto, CA",
-      timeAgo: "Just now",
-      description:
-        description.trim() || "Newly listed item available for local pickup.",
-      image:
-        previewImage ||
-        "https://unsplash.com",
-      seller: {
-        name: "You",
-        joinedYear: "2024",
-        rating: "5.0",
-      },
+        id: crypto.randomUUID(),
+        title: title.trim(),
+        price: Number(price) || 0,
+        category,
+        condition,
+        location: defaultLocation.trim() || "Palo Alto, CA",
+        timeAgo: "Just now",
+        description: description.trim(),
+        image: previewImage ||
+        "/placeholder.png",
+        sellerEmail: email.trim(),
+        seller: {
+            name: email.trim().split("@")[0] || "You",
+            email: email.trim(),
+            joinedYear: "2024",
+            rating: "5.0",
+        },
     };
+
 
     onSubmitListing(created);
   };
@@ -189,13 +190,14 @@ export function ListingForm({
           {/* Email */}
           <div>
             <Input
-              type="email"
-              placeholder="Email (optional)"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="bg-slate-50/70 focus-visible:bg-white"
+                required
+                type="email"
+                placeholder="Seller Email (required)"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-slate-50/70 focus-visible:bg-white"
             />
-          </div>
+        </div>
 
           {/* Category & Condition */}
           <div className="grid grid-cols-2 gap-2.5">
