@@ -8,11 +8,12 @@ interface ListingCardProps {
   item: Listing;
   isSaved: boolean;
   onToggleSave: (e: React.MouseEvent, id: number) => void;
+  onSelect: (item: Listing) => void;
 }
 
-export function ListingCard({ item, isSaved, onToggleSave }: ListingCardProps) {
+export function ListingCard({ item, isSaved, onToggleSave, onSelect }: ListingCardProps) {
   return (
-    <div className="group cursor-pointer flex flex-col bg-white rounded-xl border border-slate-200/75 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200">
+    <div  onClick={() => onSelect(item)} className="group cursor-pointer flex flex-col bg-white rounded-xl border border-slate-200/75 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200">
       {/* Image Container */}
       <div className="aspect-square w-full bg-slate-100 overflow-hidden relative">
         <img

@@ -5,6 +5,13 @@ export interface Category {
   icon: string;
 }
 
+export interface Seller {
+  name: string;
+  joinedYear: string;
+  rating: string;
+  avatar?: string;
+}
+
 export interface Listing {
   id: number;
   price: number;
@@ -13,5 +20,7 @@ export interface Listing {
   timeAgo: string;
   condition: string;
   category: string;
+  description: string;
   image: string;
+  seller: Seller;
 }

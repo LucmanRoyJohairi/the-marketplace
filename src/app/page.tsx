@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import { CATEGORIES, LISTINGS } from "@/lib/data";
-import { PriceFilter } from "@/types/marketplace";
+import { Listing, PriceFilter } from "@/types/marketplace";
 import { MarketplaceSidebar } from "@/components/marketplace/market-sidebar";
 import { MarketplaceFilterBar } from "@/components/marketplace/filter-bar";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { MarketplaceEmptyState } from "@/components/marketplace/empty-state";
+import { ListingDetailModal } from "@/components/marketplace/listing-detail-modal";
 
 export default function MarketplacePage() {
   const [selectedCategory, setSelectedCategory] = useState("Browse all");
   const [searchQuery, setSearchQuery] = useState("");
   const [savedIds, setSavedIds] = useState<number[]>([]);
   const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
 
   const toggleSave = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
@@ -70,12 +72,23 @@ export default function MarketplacePage() {
                   item={item}
                   isSaved={savedIds.includes(item.id)}
                   onToggleSave={toggleSave}
+                  onSelect={setSelectedListing}
                 />
               ))}
             </div>
           )}
         </div>
       </main>
+
+      {/* Detail Modal when any card is clicked */}
+      <ListingDetailModal
+        listing={selectedListing}
+        onClose={() => setSelectedListing(null)}
+        isSaved={
+          selectedListing ? savedIds.includes(selectedListing.id) : false
+        }
+        onToggleSave={toggleSave}
+      />
     </div>
   );
 }
