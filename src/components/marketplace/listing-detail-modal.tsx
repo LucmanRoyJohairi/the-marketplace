@@ -94,21 +94,26 @@ export function ListingDetailModal({
         {/* Accessible hidden title for screen readers */}
         <DialogTitle className="sr-only">{listing.title}</DialogTitle>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 max-h-[90vh]">
-          {/* Left Panel: Large Image Showcase (matches your wireframe's big blue box) */}
-          <div className="md:col-span-7 lg:col-span-8 bg-slate-950 flex items-center justify-center relative min-h-[300px] md:min-h-[560px]">
+        <div className="grid grid-cols-1 md:grid-cols-12 h-[90vh] md:h-[640px]">
+          {/* Left Panel: Fixed-Height Image Showcase */}
+          <div className="md:col-span-7 lg:col-span-8 bg-slate-950 flex items-center justify-center relative h-[280px] md:h-full overflow-hidden">
             <img
               src={listing.image}
               alt={listing.title}
-              className="w-full h-full max-h-[85vh] object-contain"
+              onError={(e) => {
+                e.currentTarget.src =
+                  "https://placehold.co";
+              }}
+              className="h-full w-full object-contain"
             />
             <Badge className="absolute top-4 left-4 bg-white/90 text-slate-900 hover:bg-white backdrop-blur-xs shadow-sm">
               {listing.condition}
             </Badge>
           </div>
 
-          {/* Right Panel: Details, Seller Info & Message Form */}
-          <div className="md:col-span-5 lg:col-span-4 flex flex-col justify-between p-6 overflow-y-auto bg-white">
+          {/* Right Panel: Scrollable Details, Seller Info & Message Form */}
+          <div className="md:col-span-5 lg:col-span-4 flex flex-col justify-between p-6 h-full overflow-y-auto bg-white">
+
             <div className="space-y-5">
               {/* Header: Title, Price & Quick Actions */}
               <div>

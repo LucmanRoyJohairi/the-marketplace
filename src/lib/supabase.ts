@@ -36,7 +36,8 @@ export function mapRowToListing(row: Record<string, any>): Listing {
     sellerEmail: email,
     timeAgo: row.created_at ? formatTimeAgo(row.created_at) : "Just now",
     // Default UI values until you add these columns to your schema later:
-    condition: "Good",
+    condition: row.condition || "Good",
+
     status: "active",
     seller: {
       name: displayName,

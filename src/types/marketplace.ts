@@ -1,4 +1,13 @@
 export type PriceFilter = "all" | "under500" | "free";
+export type SortOption = "newest" | "price-asc" | "price-desc";
+
+export interface AdvancedFilters {
+  conditions: string[];
+  minPrice: string;
+  maxPrice: string;
+  sortBy: SortOption;
+}
+
 
 export interface Category {
   name: string;

@@ -1,14 +1,17 @@
 "use client";
 
-import { PriceFilter } from "@/types/marketplace";
+import { AdvancedFilters, PriceFilter } from "@/types/marketplace";
 import { Button } from "@/components/ui/button";
-import { MapPin, SlidersHorizontal } from "lucide-react";
+import { MoreFiltersPopover } from "./more-filters-popover";
+import { MapPin } from "lucide-react";
 
 interface FilterBarProps {
   selectedCategory: string;
   itemCount: number;
   priceFilter: PriceFilter;
   onPriceFilterChange: (filter: PriceFilter) => void;
+  advancedFilters: AdvancedFilters;
+  onAdvancedFiltersChange: (filters: AdvancedFilters) => void;
 }
 
 export function MarketplaceFilterBar({
@@ -16,6 +19,8 @@ export function MarketplaceFilterBar({
   itemCount,
   priceFilter,
   onPriceFilterChange,
+  advancedFilters,
+  onAdvancedFiltersChange,
 }: FilterBarProps) {
   return (
     <>
@@ -38,7 +43,7 @@ export function MarketplaceFilterBar({
         </button>
       </div>
 
-      {/* Quick Filter Pills */}
+      {/* Quick Filter Pills + More Filters Popover */}
       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
         <Button
           variant={priceFilter === "all" ? "default" : "outline"}
@@ -64,14 +69,11 @@ export function MarketplaceFilterBar({
         >
           Free Stuff
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full h-8 text-xs ml-auto gap-1.5"
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          More filters
-        </Button>
+
+        <MoreFiltersPopover
+          filters={advancedFilters}
+          onChange={onAdvancedFiltersChange}
+        />
       </div>
     </>
   );

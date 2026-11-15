@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { CATEGORIES } from "@/lib/data";
 import { supabase, mapRowToListing } from "@/lib/supabase";
-import { Listing, PriceFilter } from "@/types/marketplace";
+import { AdvancedFilters, Listing, PriceFilter } from "@/types/marketplace";
 import { MarketplaceSidebar } from "@/components/marketplace/market-sidebar";
 import { MarketplaceFilterBar } from "@/components/marketplace/filter-bar";
 import { ListingCard } from "@/components/marketplace/listing-card";
@@ -24,6 +24,14 @@ export default function MarketplacePage() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    conditions: [],
+    minPrice: "",
+    maxPrice: "",
+    sortBy: "newest",
+  });
+
+  
 
   // Fetch live listings from Supabase
   useEffect(() => {
@@ -61,12 +69,7 @@ export default function MarketplacePage() {
       currentUserEmail &&
       item.sellerEmail.toLowerCase() === currentUserEmail.toLowerCase()
   );
-
-  const hasActiveFilters =
-  selectedCategory !== "Browse all" ||
-  searchQuery.trim() !== "" ||
-  priceFilter !== "all";
-
+  
   const handleAddListing = async (newListing: Listing) => {
     setCurrentUserEmail(newListing.sellerEmail);
 
@@ -77,12 +80,14 @@ export default function MarketplacePage() {
         description: newListing.description,
         price: newListing.price,
         category: newListing.category,
+        condition: newListing.condition, // <-- Add this line
         seller_email: newListing.sellerEmail,
         image_url: newListing.image,
         location: newListing.location,
       })
       .select()
       .single();
+
 
     if (!error && data) {
       setListings((prev) => [mapRowToListing(data), ...prev]);
@@ -118,13 +123,22 @@ export default function MarketplacePage() {
     );
   };
 
-  const resetFilters = () => {
-    setSelectedCategory("Browse all");
-    setSearchQuery("");
-    setPriceFilter("all");
-  };
 
-  const filteredListings = listings.filter((item) => {
+const resetFilters = () => {
+  setSelectedCategory("Browse all");
+  setSearchQuery("");
+  setPriceFilter("all");
+  setAdvancedFilters({
+    conditions: [],
+    minPrice: "",
+    maxPrice: "",
+    sortBy: "newest",
+  });
+};
+
+
+const filteredListings = listings
+  .filter((item) => {
     if (item.status === "sold") return false;
 
     const matchesCategory =
@@ -137,8 +151,40 @@ export default function MarketplacePage() {
       (priceFilter === "under500" && item.price <= 500) ||
       (priceFilter === "free" && item.price === 0);
 
-    return matchesCategory && matchesSearch && matchesPrice;
+    // Advanced condition & custom price range checks
+    const matchesCondition =
+      advancedFilters.conditions.length === 0 ||
+      advancedFilters.conditions.includes(item.condition);
+    const matchesMinPrice =
+      advancedFilters.minPrice === "" ||
+      item.price >= Number(advancedFilters.minPrice);
+    const matchesMaxPrice =
+      advancedFilters.maxPrice === "" ||
+      item.price <= Number(advancedFilters.maxPrice);
+
+    return (
+      matchesCategory &&
+      matchesSearch &&
+      matchesPrice &&
+      matchesCondition &&
+      matchesMinPrice &&
+      matchesMaxPrice
+    );
+  })
+  .sort((a, b) => {
+    if (advancedFilters.sortBy === "price-asc") return a.price - b.price;
+    if (advancedFilters.sortBy === "price-desc") return b.price - a.price;
+    return 0; // "newest" preserves Supabase created_at DESC order
   });
+
+
+const hasActiveFilters =
+  selectedCategory !== "Browse all" ||
+  searchQuery.trim() !== "" ||
+  priceFilter !== "all" ||
+  advancedFilters.conditions.length > 0 ||
+  advancedFilters.minPrice !== "" ||
+  advancedFilters.maxPrice !== "";
 
   return (
     <div className="flex min-h-screen bg-slate-50/70 text-slate-900">
@@ -158,7 +204,10 @@ export default function MarketplacePage() {
             itemCount={filteredListings.length}
             priceFilter={priceFilter}
             onPriceFilterChange={setPriceFilter}
+            advancedFilters={advancedFilters}
+            onAdvancedFiltersChange={setAdvancedFilters}
           />
+
 
           {fetchError && (
             <div className="mb-6 rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">
