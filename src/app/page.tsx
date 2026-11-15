@@ -1,18 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CATEGORIES, LISTINGS as INITIAL_LISTINGS } from "@/lib/data";
+import { CATEGORIES } from "@/lib/data";
 import { supabase, mapRowToListing } from "@/lib/supabase";
 import { Listing, PriceFilter } from "@/types/marketplace";
 import { MarketplaceSidebar } from "@/components/marketplace/market-sidebar";
 import { MarketplaceFilterBar } from "@/components/marketplace/filter-bar";
 import { ListingCard } from "@/components/marketplace/listing-card";
+import { ListingSkeletonGrid } from "@/components/marketplace/loading-skeleton";
 import { MarketplaceEmptyState } from "@/components/marketplace/empty-state";
 import { ListingDetailModal } from "@/components/marketplace/listing-detail-modal";
 import { CreateListingView } from "@/components/marketplace/create/create-listing-view";
 
 export default function MarketplacePage() {
-  const [listings, setListings] = useState<Listing[]>(INITIAL_LISTINGS);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const [selectedCategory, setSelectedCategory] = useState("Browse all");
   const [searchQuery, setSearchQuery] = useState("");
   const [savedIds, setSavedIds] = useState<string[]>([]);
@@ -21,30 +25,40 @@ export default function MarketplacePage() {
   const [isCreating, setIsCreating] = useState(false);
   const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
 
-  // 1. Fetch listings from Supabase on initial load
+  // Fetch live listings from Supabase
   useEffect(() => {
     async function fetchListings() {
+      setIsLoading(true);
+      setFetchError(null);
+
       const { data, error } = await supabase
         .from("listings")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (error) {
+        setFetchError(error.message);
+      } else if (data) {
         setListings(data.map(mapRowToListing));
       }
+
+      setIsLoading(false);
     }
 
     fetchListings();
   }, []);
 
-  // Filter personal listings matching the seller's email
   const userListings = listings.filter(
     (item) =>
       currentUserEmail &&
       item.sellerEmail.toLowerCase() === currentUserEmail.toLowerCase()
   );
 
-  // 2. Insert a new listing matching your exact SQL columns
+  const hasActiveFilters =
+  selectedCategory !== "Browse all" ||
+  searchQuery.trim() !== "" ||
+  priceFilter !== "all";
+
   const handleAddListing = async (newListing: Listing) => {
     setCurrentUserEmail(newListing.sellerEmail);
 
@@ -69,7 +83,6 @@ export default function MarketplacePage() {
     }
   };
 
-  // 3. Toggle Sold/Active state locally (until you add a 'status' column to Postgres)
   const handleToggleSold = (id: string) => {
     setListings((prev) =>
       prev.map((item) =>
@@ -80,7 +93,6 @@ export default function MarketplacePage() {
     );
   };
 
-  // 4. Delete listing by UUID from Supabase
   const handleDeleteListing = async (id: string) => {
     const { error } = await supabase.from("listings").delete().eq("id", id);
 
@@ -104,7 +116,6 @@ export default function MarketplacePage() {
     setPriceFilter("all");
   };
 
-  // Filter active listings for the main public grid
   const filteredListings = listings.filter((item) => {
     if (item.status === "sold") return false;
 
@@ -141,8 +152,22 @@ export default function MarketplacePage() {
             onPriceFilterChange={setPriceFilter}
           />
 
-          {filteredListings.length === 0 ? (
-            <MarketplaceEmptyState onReset={resetFilters} />
+          {fetchError && (
+            <div className="mb-6 rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">
+              Could not load listings from Supabase: {fetchError}
+            </div>
+          )}
+
+          {isLoading ? (
+            <ListingSkeletonGrid />
+          ) : filteredListings.length === 0 ? (
+            <MarketplaceEmptyState
+              hasActiveFilters={hasActiveFilters}
+              searchQuery={searchQuery}
+              selectedCategory={selectedCategory}
+              onReset={resetFilters}
+              onCreateNew={() => setIsCreating(true)}
+            />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
               {filteredListings.map((item) => (
