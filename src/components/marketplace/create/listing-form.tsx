@@ -15,8 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Upload, X } from "lucide-react";
-
+import { ArrowLeft, Upload, X, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 interface ListingFormProps {
   selectedType: string;
   defaultLocation: string;
@@ -48,28 +48,56 @@ export function ListingForm({
   const [description, setDescription] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const typeTitle =
     LISTING_TYPES.find((t) => t.id === selectedType)?.title || "New listing";
 
-  // Local client-side preview only (ready to hook up to cloud storage later)
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewImage(objectUrl);
-  };
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setSelectedFile(file); // <-- Add this line
+        setPreviewImage(URL.createObjectURL(file));
+    };
 
-  const clearPhoto = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setPreviewImage(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
+    const clearPhoto = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedFile(null); // <-- Add this line
+        setPreviewImage(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || !email.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+
+    let finalImageUrl =
+        "/placeholder.png";
+
+    if (selectedFile) {
+        const fileExt = selectedFile.name.split(".").pop() || "jpg";
+        const filePath = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+        .from("listing-images")
+        .upload(filePath, selectedFile);
+
+        if (!uploadError) {
+        const { data } = supabase.storage
+            .from("listing-images")
+            .getPublicUrl(filePath);
+        finalImageUrl = data.publicUrl;
+        } else {
+        console.error("Storage upload error:", uploadError.message);
+        }
+    }
 
     const created: Listing = {
         id: crypto.randomUUID(),
@@ -80,8 +108,7 @@ export function ListingForm({
         location: defaultLocation.trim() || "Palo Alto, CA",
         timeAgo: "Just now",
         description: description.trim(),
-        image: previewImage ||
-        "/placeholder.png",
+        image: finalImageUrl,
         sellerEmail: email.trim(),
         seller: {
             name: email.trim().split("@")[0] || "You",
@@ -94,6 +121,8 @@ export function ListingForm({
 
     onSubmitListing(created);
   };
+
+  
 
   return (
     <div className="w-full max-w-[1360px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
@@ -263,20 +292,31 @@ export function ListingForm({
           {/* Primary Blue Submit Button (Matches your wireframe's "Next" CTA) */}
           <div className="pt-1 space-y-2">
             <Button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 rounded-lg shadow-xs"
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-70 text-white font-semibold h-10 rounded-lg shadow-xs"
             >
-              Publish Listing
+                {isSubmitting ? (
+                <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Publishing listing...
+                </>
+                ) : (
+                "Publish Listing"
+                )}
             </Button>
+
             <Button
-              type="button"
-              variant="ghost"
-              onClick={onCancel}
-              className="w-full h-8 text-xs text-slate-500"
+                type="button"
+                variant="ghost"
+                onClick={onCancel}
+                disabled={isSubmitting}
+                className="w-full h-8 text-xs text-slate-500"
             >
-              Cancel
+                Cancel
             </Button>
-          </div>
+        </div>
+
         </form>
       </div>
 

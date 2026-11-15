@@ -41,11 +41,11 @@ export function CreateListingView({
     onClose();
   };
 
-  const handleCreated = (newListing: Listing) => {
-    onAddListing(newListing);
-    setSelectedType(null);
-    setActiveTab("your-listings"); // Jump to Your Listings after publishing!
-  };
+    const handleCreated = async (newListing: Listing) => {
+        await onAddListing(newListing);
+        setSelectedType(null);
+        setActiveTab("your-listings");
+    };
 
   return (
     <div className="fixed inset-0 z-50 flex bg-slate-50 text-slate-900 animate-in fade-in duration-150">

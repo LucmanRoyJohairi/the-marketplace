@@ -27,10 +27,11 @@ export default function MarketplacePage() {
 
   // Fetch live listings from Supabase
   useEffect(() => {
-    async function fetchListings() {
-      setIsLoading(true);
-      setFetchError(null);
+  async function fetchListings() {
+    setIsLoading(true);
+    setFetchError(null);
 
+    try {
       const { data, error } = await supabase
         .from("listings")
         .select("*")
@@ -41,12 +42,19 @@ export default function MarketplacePage() {
       } else if (data) {
         setListings(data.map(mapRowToListing));
       }
-
+    } catch (err) {
+      setFetchError(
+        err instanceof Error
+          ? err.message
+          : "Network error while connecting to Supabase."
+      );
+    } finally {
       setIsLoading(false);
     }
+  }
 
-    fetchListings();
-  }, []);
+  fetchListings();
+}, []);
 
   const userListings = listings.filter(
     (item) =>

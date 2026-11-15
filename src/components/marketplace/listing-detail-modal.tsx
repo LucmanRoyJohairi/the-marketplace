@@ -21,6 +21,11 @@ import {
   Share2,
 } from "lucide-react";
 
+import { supabase } from "@/lib/supabase";
+import { Input } from "@/components/ui/input";
+import { Mail, Loader2 } from "lucide-react";
+
+
 interface ListingDetailModalProps {
   listing: Listing | null;
   onClose: () => void;
@@ -34,30 +39,53 @@ export function ListingDetailModal({
   isSaved,
   onToggleSave,
 }: ListingDetailModalProps) {
-  const [message, setMessage] = useState("");
-  const [isSent, setIsSent] = useState(false);
-
+    const [buyerEmail, setBuyerEmail] = useState("");
+    const [message, setMessage] = useState("");
+    const [isSending, setIsSending] = useState(false);
+    const [isSent, setIsSent] = useState(false);
+    const [sendError, setSendError] = useState<string | null>(null);
   // Pre-fill a contextual message whenever a new listing is opened
   useEffect(() => {
     if (listing) {
       setMessage(`Hi ${listing.seller.name.split(" ")[0]}, is this still available?`);
       setIsSent(false);
+      setSendError(null); // <-- Add this line
     }
   }, [listing]);
 
   if (!listing) return null;
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim()) return;
-    setIsSent(true);
+    if (!buyerEmail.trim() || !message.trim() || isSending) return;
+
+    setIsSending(true);
+    setSendError(null);
+
+    const { error } = await supabase.from("messages").insert({
+      listing_id: listing.id,
+      buyer_email: buyerEmail.trim(),
+      seller_email: listing.sellerEmail,
+      message: message.trim(),
+    });
+
+    if (error) {
+      setSendError(`Could not send message: ${error.message}`);
+    } else {
+      setIsSent(true);
+    }
+
+    setIsSending(false);
   };
+
 
   const initials = listing.seller.name
     .split(" ")
     .map((n) => n[0])
     .join("")
     .toUpperCase();
+
+    
 
   return (
     <Dialog open={!!listing} onOpenChange={(open) => !open && onClose()}>
@@ -177,6 +205,12 @@ export function ListingDetailModal({
                 Send seller a message
               </label>
 
+              {sendError && (
+                <div className="mb-2.5 rounded-lg bg-rose-50 border border-rose-200 p-2.5 text-xs text-rose-700">
+                  {sendError}
+                </div>
+              )}
+
               {isSent ? (
                 <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-center space-y-1.5">
                   <CheckCircle2 className="h-6 w-6 text-emerald-600 mx-auto" />
@@ -184,7 +218,7 @@ export function ListingDetailModal({
                     Message sent to {listing.seller.name}!
                   </p>
                   <p className="text-xs text-emerald-700">
-                    You&apos;ll be notified when they reply.
+                    Replies will be sent to {buyerEmail}.
                   </p>
                   <Button
                     variant="ghost"
@@ -196,21 +230,49 @@ export function ListingDetailModal({
                   </Button>
                 </div>
               ) : (
-                <form onSubmit={handleSendMessage} className="space-y-3">
+                <form onSubmit={handleSendMessage} className="space-y-2.5">
+                  {/* New Buyer Email Input */}
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="buyer-email"
+                      type="email"
+                      required
+                      value={buyerEmail}
+                      onChange={(e) => setBuyerEmail(e.target.value)}
+                      placeholder="Your email address"
+                      className="pl-9 bg-slate-50 border-slate-200 focus-visible:bg-white focus-visible:border-blue-500 text-sm rounded-xl h-9"
+                    />
+                  </div>
+
+                  {/* Existing Message Textarea */}
                   <Textarea
                     id="seller-message"
                     rows={3}
+                    required
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Write a message to the seller..."
                     className="resize-none bg-slate-50 border-slate-200 focus-visible:bg-white focus-visible:border-blue-500 text-sm rounded-xl"
                   />
+
+                  {/* Submit Button with Spinner */}
                   <Button
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl h-10 shadow-xs"
+                    disabled={isSending}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-70 text-white font-semibold rounded-xl h-10 shadow-xs"
                   >
-                    <Send className="h-4 w-4 mr-2" />
-                    Send
+                    {isSending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Send
+                      </>
+                    )}
                   </Button>
                 </form>
               )}
