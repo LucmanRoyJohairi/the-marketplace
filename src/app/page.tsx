@@ -31,8 +31,17 @@ export default function MarketplacePage() {
     sortBy: "newest",
   });
 
+
+  
   // 1. Add state in MarketplacePage:
   const [userProfile, setUserProfile] = useState<SellerProfile | null>(null);
+  const activeEmail = (userProfile?.email || currentUserEmail).trim().toLowerCase();
+
+  const userListings = listings.filter(
+    (item) =>
+      activeEmail !== "" &&
+    item.sellerEmail.trim().toLowerCase() === activeEmail
+  );
 
   // 2. Restore saved email & fetch profile on mount:
   useEffect(() => {
@@ -44,6 +53,8 @@ export default function MarketplacePage() {
       });
     }
   }, []);
+
+  
 
   
 
@@ -78,11 +89,6 @@ export default function MarketplacePage() {
   fetchListings();
 }, []);
 
-  const userListings = listings.filter(
-    (item) =>
-      currentUserEmail &&
-      item.sellerEmail.toLowerCase() === currentUserEmail.toLowerCase()
-  );
   
   const handleAddListing = async (newListing: Listing) => {
     const normalizedEmail = newListing.sellerEmail.trim().toLowerCase();
@@ -123,14 +129,27 @@ export default function MarketplacePage() {
     }
   };
 
-  const handleToggleSold = (id: string) => {
+  const handleToggleSold = async (id: string) => {
+    const target = listings.find((item) => item.id === id);
+    if (!target) return;
+
+    const nextStatus = target.status === "sold" ? "active" : "sold";
+
+    // Optimistic UI update
     setListings((prev) =>
       prev.map((item) =>
-        item.id === id
-          ? { ...item, status: item.status === "sold" ? "active" : "sold" }
-          : item
+        item.id === id ? { ...item, status: nextStatus } : item
       )
     );
+
+    const { error } = await supabase
+      .from("listings")
+      .update({ status: nextStatus })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Failed to update listing status:", error.message);
+    }
   };
 
   const handleDeleteListing = async (id: string) => {

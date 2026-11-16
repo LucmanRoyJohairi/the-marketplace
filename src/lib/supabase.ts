@@ -30,15 +30,11 @@ export function mapRowToListing(row: Record<string, any>): Listing {
     price: Number(row.price),
     category: row.category,
     location: row.location || "Palo Alto, CA",
-    image:
-      row.image_url ||
-      "/placeholder.png",
+    image: row.image_url || "/placeholder.png",
     sellerEmail: email,
     timeAgo: row.created_at ? formatTimeAgo(row.created_at) : "Just now",
-    // Default UI values until you add these columns to your schema later:
     condition: row.condition || "Good",
-
-    status: "active",
+    status: row.status === "sold" ? "sold" : "active",
     seller: {
       name: displayName,
       email,
@@ -47,6 +43,7 @@ export function mapRowToListing(row: Record<string, any>): Listing {
     },
   };
 }
+
 
 export interface SellerProfile {
   email: string;
