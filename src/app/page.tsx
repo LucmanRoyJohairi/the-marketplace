@@ -252,12 +252,15 @@ const hasActiveFilters =
 
       <CreateListingView
         isOpen={isCreating}
+        userEmail={currentUserEmail}
         userListings={userListings}
+        onUpdateUserEmail={setCurrentUserEmail}
         onClose={() => setIsCreating(false)}
         onAddListing={handleAddListing}
         onToggleSold={handleToggleSold}
         onDeleteListing={handleDeleteListing}
       />
+
     </div>
   );
 }
