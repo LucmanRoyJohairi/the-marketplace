@@ -47,3 +47,76 @@ export function mapRowToListing(row: Record<string, any>): Listing {
     },
   };
 }
+
+export interface SellerProfile {
+  email: string;
+  displayName: string;
+  location: string;
+  rating: string;
+  joinedDate: string;
+}
+
+export async function fetchProfile(email: string): Promise<SellerProfile | null> {
+  if (!email) return null;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("email", email.toLowerCase())
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return {
+    email: data.email,
+    displayName: data.display_name,
+    location: data.location || "Palo Alto, CA",
+    rating: Number(data.rating || 5.0).toFixed(1),
+    joinedDate: data.created_at
+      ? new Date(data.created_at).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "January 2024",
+  };
+}
+
+export async function upsertProfile(profile: {
+  email: string;
+  displayName: string;
+  location: string;
+}): Promise<SellerProfile | null> {
+  const normalizedEmail = profile.email.trim().toLowerCase();
+  if (!normalizedEmail) return null;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        email: normalizedEmail,
+        display_name: profile.displayName.trim(),
+        location: profile.location.trim() || "Palo Alto, CA",
+      },
+      { onConflict: "email" }
+    )
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error("Failed to save profile:", error?.message);
+    return null;
+  }
+
+  return {
+    email: data.email,
+    displayName: data.display_name,
+    location: data.location,
+    rating: Number(data.rating || 5.0).toFixed(1),
+    joinedDate: new Date(data.created_at).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }),
+  };
+}

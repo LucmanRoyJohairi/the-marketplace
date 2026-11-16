@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { CATEGORIES } from "@/lib/data";
-import { supabase, mapRowToListing } from "@/lib/supabase";
+import { supabase, mapRowToListing, fetchProfile, upsertProfile, SellerProfile } from "@/lib/supabase";
 import { AdvancedFilters, Listing, PriceFilter } from "@/types/marketplace";
 import { MarketplaceSidebar } from "@/components/marketplace/market-sidebar";
 import { MarketplaceFilterBar } from "@/components/marketplace/filter-bar";
@@ -30,6 +30,20 @@ export default function MarketplacePage() {
     maxPrice: "",
     sortBy: "newest",
   });
+
+  // 1. Add state in MarketplacePage:
+  const [userProfile, setUserProfile] = useState<SellerProfile | null>(null);
+
+  // 2. Restore saved email & fetch profile on mount:
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("marketplace_user_email");
+    if (savedEmail) {
+      setCurrentUserEmail(savedEmail);
+      fetchProfile(savedEmail).then((prof) => {
+        if (prof) setUserProfile(prof);
+      });
+    }
+  }, []);
 
   
 
@@ -71,7 +85,20 @@ export default function MarketplacePage() {
   );
   
   const handleAddListing = async (newListing: Listing) => {
-    setCurrentUserEmail(newListing.sellerEmail);
+    const normalizedEmail = newListing.sellerEmail.trim().toLowerCase();
+    setCurrentUserEmail(normalizedEmail);
+    localStorage.setItem("marketplace_user_email", normalizedEmail);
+
+     const existing = await fetchProfile(normalizedEmail);
+      if (!existing) {
+        const createdProf = await upsertProfile({
+          email: normalizedEmail,
+          displayName: normalizedEmail.split("@")[0],
+          location: newListing.location,
+        });
+        if (createdProf) setUserProfile(createdProf);
+      }
+
 
     const { data, error } = await supabase
       .from("listings")
@@ -253,13 +280,18 @@ const hasActiveFilters =
       <CreateListingView
         isOpen={isCreating}
         userEmail={currentUserEmail}
+        userProfile={userProfile}
         userListings={userListings}
-        onUpdateUserEmail={setCurrentUserEmail}
+        onProfileSaved={(saved) => {
+          setUserProfile(saved);
+          setCurrentUserEmail(saved.email);
+        }}
         onClose={() => setIsCreating(false)}
         onAddListing={handleAddListing}
         onToggleSold={handleToggleSold}
         onDeleteListing={handleDeleteListing}
       />
+
 
     </div>
   );

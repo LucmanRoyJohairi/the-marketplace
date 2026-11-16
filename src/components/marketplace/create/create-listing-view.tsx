@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Listing } from "@/types/marketplace";
+import { SellerProfile } from "@/lib/supabase";
 import { CreateSidebar } from "./create-sidebar";
 import { CreateHeader } from "./create-header";
 import { TypeSelector } from "./type-selector";
@@ -13,8 +14,9 @@ interface CreateListingViewProps {
   isOpen: boolean;
   initialTab?: "create" | "your-listings" | "profile";
   userEmail: string;
+  userProfile: SellerProfile | null;
   userListings: Listing[];
-  onUpdateUserEmail: (email: string) => void;
+  onProfileSaved: (saved: SellerProfile) => void;
   onClose: () => void;
   onAddListing: (newListing: Listing) => void;
   onToggleSold: (id: string) => void;
@@ -25,8 +27,9 @@ export function CreateListingView({
   isOpen,
   initialTab = "create",
   userEmail,
+  userProfile,
   userListings,
-  onUpdateUserEmail,
+  onProfileSaved,
   onClose,
   onAddListing,
   onToggleSold,
@@ -36,9 +39,13 @@ export function CreateListingView({
     "create" | "your-listings" | "profile"
   >(initialTab);
   const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [location, setLocation] = useState("Palo Alto, CA");
+  const [location, setLocation] = useState(
+    userProfile?.location || "Palo Alto, CA"
+  );
 
   if (!isOpen) return null;
+
+  const activeLocation = userProfile?.location || location;
 
   const handleClose = () => {
     setSelectedType(null);
@@ -62,7 +69,7 @@ export function CreateListingView({
         }}
         hasSelectedType={!!selectedType}
         userListingsCount={userListings.length}
-        location={location}
+        location={activeLocation}
         onClose={handleClose}
       />
 
@@ -76,11 +83,12 @@ export function CreateListingView({
           {activeTab === "profile" ? (
             <ProfileView
               userEmail={userEmail}
-              location={location}
+              profile={userProfile}
+              location={activeLocation}
               userListings={userListings}
-              onUpdateProfile={(nextEmail, nextLocation) => {
-                onUpdateUserEmail(nextEmail);
-                setLocation(nextLocation);
+              onProfileSaved={(saved) => {
+                setLocation(saved.location);
+                onProfileSaved(saved);
               }}
               onNavigateTab={(tab) => {
                 setSelectedType(null);
@@ -106,12 +114,16 @@ export function CreateListingView({
           ) : (
             <ListingForm
               selectedType={selectedType}
-              defaultLocation={location}
+              defaultEmail={userProfile?.email || userEmail}
+              sellerProfile={userProfile}
+              defaultLocation={activeLocation}
               onLocationChange={setLocation}
               onBack={() => setSelectedType(null)}
               onCancel={handleClose}
               onSubmitListing={handleCreated}
             />
+
+
           )}
         </div>
       </div>

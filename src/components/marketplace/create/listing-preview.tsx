@@ -12,6 +12,9 @@ interface ListingPreviewProps {
   location: string;
   description: string;
   previewImage: string | null;
+  sellerName?: string;
+  sellerRating?: string;
+  joinedYear?: string;
 }
 
 export function ListingPreview({
@@ -22,6 +25,9 @@ export function ListingPreview({
   location,
   description,
   previewImage,
+  sellerName = "You",
+  sellerRating = "5.0",
+  joinedYear = "2024",
 }: ListingPreviewProps) {
   const formattedPrice =
     price === ""
@@ -30,7 +36,15 @@ export function ListingPreview({
       ? "Free"
       : `$${Number(price).toLocaleString()}`;
 
-    return (
+  const displayName = sellerName.trim() || "You";
+  const initials = displayName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
     <div className="w-full max-w-2xl mx-auto">
       {/* Main Preview Card with integrated top header */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
@@ -39,9 +53,7 @@ export function ListingPreview({
           <span className="text-sm font-bold tracking-tight text-slate-800">
             Preview
           </span>
-          <span className="text-xs text-slate-400">
-            Live buyer view
-          </span>
+          <span className="text-xs text-slate-400">Live buyer view</span>
         </div>
 
         {/* Top Media Area */}
@@ -53,9 +65,7 @@ export function ListingPreview({
               className="h-full w-full object-cover"
             />
           ) : (
-            /* Subtle diagonal pattern matching your wireframe's placeholder */
             <div className="relative w-full h-full flex flex-col items-center justify-center text-blue-400">
-              
               <div className="relative z-10 flex flex-col items-center gap-1.5 bg-white/80 backdrop-blur-xs px-4 py-2.5 rounded-xl border border-blue-100 shadow-2xs">
                 <ImageIcon className="h-5 w-5 text-blue-500" />
                 <span className="text-xs font-medium text-slate-600">
@@ -121,7 +131,7 @@ export function ListingPreview({
             </p>
           </div>
 
-          {/* Seller Information */}
+          {/* Dynamic Seller Information */}
           <div className="pt-4 border-t border-slate-100">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
               Seller Information
@@ -129,18 +139,20 @@ export function ListingPreview({
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 border border-slate-200">
                 <AvatarFallback className="bg-blue-50 text-blue-700 font-semibold text-sm">
-                  YO
+                  {initials || "YO"}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="text-sm font-semibold text-slate-900">You</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {displayName}
+                </p>
                 <div className="flex items-center gap-1.5 text-xs text-slate-500">
                   <span className="inline-flex items-center gap-0.5 text-amber-600 font-medium">
                     <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                    5.0
+                    {sellerRating}
                   </span>
                   <span>·</span>
-                  <span>Joined 2024</span>
+                  <span>Joined {joinedYear}</span>
                 </div>
               </div>
             </div>

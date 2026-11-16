@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Mail, MapPin, Calendar, Edit3, Check, X } from "lucide-react";
+import { Mail, MapPin, Calendar, Edit3, Check, X, Loader2 } from "lucide-react";
 
 interface ProfileInfoCardProps {
   displayName: string;
   userEmail: string;
   location: string;
   isEditing: boolean;
+  isSaving?: boolean;
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onSaveProfile: (name: string, email: string, location: string) => void;
@@ -22,6 +23,7 @@ export function ProfileInfoCard({
   userEmail,
   location,
   isEditing,
+  isSaving = false,
   onStartEdit,
   onCancelEdit,
   onSaveProfile,
@@ -40,12 +42,13 @@ export function ProfileInfoCard({
 
   const initials = displayName
     .split(" ")
-    .map((n) => n[0])
+    .map((n) => n)
     .join("")
     .slice(0, 2)
     .toUpperCase();
 
   const handleSave = () => {
+    if (isSaving) return;
     onSaveProfile(
       draftName.trim() || displayName,
       draftEmail.trim(),
@@ -68,6 +71,7 @@ export function ProfileInfoCard({
               <Input
                 value={draftName}
                 onChange={(e) => setDraftName(e.target.value)}
+                disabled={isSaving}
                 placeholder="Display name"
                 className="h-8 text-base font-bold mb-1.5 bg-slate-50"
               />
@@ -88,15 +92,26 @@ export function ProfileInfoCard({
             <Button
               size="sm"
               onClick={handleSave}
-              className="h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs gap-1"
+              disabled={isSaving || !draftEmail.trim()}
+              className="h-8 bg-blue-600 hover:bg-blue-700 disabled:opacity-70 text-white rounded-lg text-xs gap-1.5"
             >
-              <Check className="h-3.5 w-3.5" />
-              Save
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  Save
+                </>
+              )}
             </Button>
             <Button
               size="sm"
               variant="outline"
               onClick={onCancelEdit}
+              disabled={isSaving}
               className="h-8 rounded-lg text-xs gap-1"
             >
               <X className="h-3.5 w-3.5" />
@@ -127,6 +142,7 @@ export function ProfileInfoCard({
                 type="email"
                 value={draftEmail}
                 onChange={(e) => setDraftEmail(e.target.value)}
+                disabled={isSaving}
                 placeholder="you@example.com"
                 className="h-8 text-xs mt-1 bg-slate-50"
               />
@@ -154,6 +170,7 @@ export function ProfileInfoCard({
               <Input
                 value={draftLocation}
                 onChange={(e) => setDraftLocation(e.target.value)}
+                disabled={isSaving}
                 placeholder="City, State"
                 className="h-8 text-xs mt-1 bg-slate-50 max-w-xs"
               />

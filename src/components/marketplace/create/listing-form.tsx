@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Listing } from "@/types/marketplace";
 import { CATEGORIES } from "@/lib/data";
 import { LISTING_TYPES } from "./listing-types";
@@ -16,9 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft, Upload, X, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, SellerProfile } from "@/lib/supabase";
 interface ListingFormProps {
   selectedType: string;
+  defaultEmail?: string;
+  sellerProfile?: SellerProfile | null;
   defaultLocation: string;
   onLocationChange: (loc: string) => void;
   onBack: () => void;
@@ -30,13 +32,15 @@ export function ListingForm({
   selectedType,
   defaultLocation,
   onLocationChange,
+  defaultEmail = "",
+  sellerProfile,
   onBack,
   onCancel,
   onSubmitListing,
 }: ListingFormProps) {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(defaultEmail);
   const [category, setCategory] = useState(
     selectedType === "vehicle"
       ? "Vehicles"
@@ -44,6 +48,13 @@ export function ListingForm({
       ? "Property Rentals"
       : "Electronics"
   );
+
+  useEffect(() => {
+    if (defaultEmail && !email) {
+      setEmail(defaultEmail);
+    }
+  }, [defaultEmail]);
+
   const [condition, setCondition] = useState("Like New");
   const [description, setDescription] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -122,7 +133,19 @@ export function ListingForm({
     onSubmitListing(created);
   };
 
-  
+  const resolvedSellerName =
+  sellerProfile?.displayName ||
+  (email.trim()
+    ? email
+        .trim()
+        .split("@")[0]
+        .replace(/[._-]/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+    : "You");
+
+  const resolvedJoinedYear = sellerProfile?.joinedDate
+    ? sellerProfile.joinedDate.split(", ").pop() || "2024"
+    : "2024";
 
   return (
     <div className="w-full max-w-[1360px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
@@ -322,7 +345,7 @@ export function ListingForm({
 
       {/* Right Column: Live Preview Card */}
       <div className="lg:col-span-7 xl:col-span-8">
-        <ListingPreview
+         <ListingPreview
           title={title}
           price={price}
           category={category}
@@ -330,6 +353,9 @@ export function ListingForm({
           location={defaultLocation}
           description={description}
           previewImage={previewImage}
+          sellerName={resolvedSellerName}
+          sellerRating={sellerProfile?.rating || "5.0"}
+          joinedYear={resolvedJoinedYear}
         />
       </div>
     </div>
