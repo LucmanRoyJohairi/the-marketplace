@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   Star,
   Share2,
+  ShoppingBag,
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
@@ -44,16 +45,55 @@ export function ListingDetailModal({
     const [isSending, setIsSending] = useState(false);
     const [isSent, setIsSent] = useState(false);
     const [sendError, setSendError] = useState<string | null>(null);
+    const [isBuying, setIsBuying] = useState(false);
+    const [buyError, setBuyError] = useState<string | null>(null);
+
+
   // Pre-fill a contextual message whenever a new listing is opened
   useEffect(() => {
     if (listing) {
+      console.log('👋🏻', listing)
       setMessage(`Hi ${listing.seller.name.split(" ")[0]}, is this still available?`);
       setIsSent(false);
-      setSendError(null); // <-- Add this line
+      setSendError(null);
+      setBuyError(null);
     }
   }, [listing]);
 
+  
+
   if (!listing) return null;
+
+  const canBuyOnline =
+  listing.price > 0 &&
+  listing.status !== "sold" &&
+  Boolean(listing.seller.stripeOnboarded);
+
+  const handleBuyNow = async () => {
+    if (isBuying) return;
+    setIsBuying(true);
+    setBuyError(null);
+
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listingId: listing.id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Unable to start checkout.");
+      }
+
+      window.location.href = data.url;
+    } catch (err) {
+      setBuyError(
+        err instanceof Error ? err.message : "Checkout failed. Please try again."
+      );
+      setIsBuying(false);
+    }
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +126,7 @@ export function ListingDetailModal({
     .toUpperCase();
 
     
-
+  console.log(canBuyOnline, listing.seller.email, listing.status)
   return (
     <Dialog open={!!listing} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-5xl sm:max-w-5xl w-[95vw] p-0 overflow-hidden bg-white border-slate-200 rounded-2xl gap-0">
@@ -200,6 +240,35 @@ export function ListingDetailModal({
                 </div>
               </div>
             </div>
+
+            {canBuyOnline && (
+                <div className="pt-4 mt-4 border-t border-slate-100 space-y-2">
+                  {buyError && (
+                    <div className="rounded-lg bg-rose-50 border border-rose-200 p-2.5 text-xs text-rose-700">
+                      {buyError}
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    onClick={handleBuyNow}
+                    disabled={isBuying}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl h-11 shadow-xs"
+                  >
+                    {isBuying ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Redirecting to Checkout...
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="h-4 w-4 mr-2" />
+                        Buy Now · ${listing.price.toLocaleString()}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
 
             {/* Send Seller a Message Box (matches your wireframe's bottom right CTA) */}
             <div className="pt-5 mt-6 border-t border-slate-100">

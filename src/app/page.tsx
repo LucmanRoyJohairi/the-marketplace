@@ -31,7 +31,7 @@ export default function MarketplacePage() {
     sortBy: "newest",
   });
 
-
+  const [checkoutBanner, setCheckoutBanner] = useState<string | null>(null);
   
   // 1. Add state in MarketplacePage:
   const [userProfile, setUserProfile] = useState<SellerProfile | null>(null);
@@ -48,6 +48,32 @@ export default function MarketplacePage() {
     const params = new URLSearchParams(window.location.search);
     const stripeReturn = params.get("stripe_connect");
     const returnEmail = params.get("email");
+
+    const checkoutStatus = params.get("checkout");
+    const sessionId = params.get("session_id");
+    const accountId = params.get("account_id");
+
+    if (checkoutStatus === "success" && sessionId && accountId) {
+      fetch(
+        `/api/stripe/verify-session?session_id=${encodeURIComponent(
+          sessionId
+        )}&account_id=${encodeURIComponent(accountId)}`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.paid && data.listingId) {
+            setListings((prev) =>
+              prev.map((item) =>
+                item.id === data.listingId ? { ...item, status: "sold" } : item
+              )
+            );
+            setCheckoutBanner(
+              "Payment successful! The item has been marked as sold."
+            );
+          }
+          window.history.replaceState({}, "", "/");
+        });
+    }
 
     const activeEmail =
       returnEmail || localStorage.getItem("marketplace_user_email") || "";
@@ -78,21 +104,46 @@ export default function MarketplacePage() {
   
 
   // Fetch live listings from Supabase
-  useEffect(() => {
+ useEffect(() => {
   async function fetchListings() {
     setIsLoading(true);
     setFetchError(null);
-
     try {
-      const { data, error } = await supabase
-        .from("listings")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const [listingsRes, profilesRes] = await Promise.all([
+        supabase
+          .from("listings")
+          .select("*")
+          .order("created_at", { ascending: false }),
+        supabase.from("profiles").select("*"),
+      ]);
 
-      if (error) {
-        setFetchError(error.message);
-      } else if (data) {
-        setListings(data.map(mapRowToListing));
+      if (listingsRes.error) {
+        setFetchError(listingsRes.error.message);
+      } else if (listingsRes.data) {
+        const profileMap: Record<string, SellerProfile> = {};
+        if (profilesRes.data) {
+          for (const p of profilesRes.data) {
+            profileMap[p.email.trim().toLowerCase()] = {
+              email: p.email,
+              displayName: p.display_name,
+              location: p.location || "Palo Alto, CA",
+              rating: Number(p.rating || 5.0).toFixed(1),
+              joinedDate: p.created_at
+                ? new Date(p.created_at).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : "January 2024",
+              stripeAccountId: p.stripe_account_id || null,
+              stripeOnboarded: Boolean(p.stripe_onboarded),
+            };
+          }
+        }
+
+        setListings(
+          listingsRes.data.map((row) => mapRowToListing(row, profileMap))
+        );
       }
     } catch (err) {
       setFetchError(
@@ -108,45 +159,58 @@ export default function MarketplacePage() {
   fetchListings();
 }, []);
 
+
   
-  const handleAddListing = async (newListing: Listing) => {
-    const normalizedEmail = newListing.sellerEmail.trim().toLowerCase();
-    setCurrentUserEmail(normalizedEmail);
-    localStorage.setItem("marketplace_user_email", normalizedEmail);
+const handleAddListing = async (newListing: Listing) => {
+  const normalizedEmail = newListing.sellerEmail.trim().toLowerCase();
+  setCurrentUserEmail(normalizedEmail);
+  localStorage.setItem("marketplace_user_email", normalizedEmail);
 
-     const existing = await fetchProfile(normalizedEmail);
-      if (!existing) {
-        const createdProf = await upsertProfile({
-          email: normalizedEmail,
-          displayName: normalizedEmail.split("@")[0],
-          location: newListing.location,
-        });
-        if (createdProf) setUserProfile(createdProf);
-      }
+  // 1. Load existing profile or create a default one
+  let activeProf =
+    userProfile?.email.trim().toLowerCase() === normalizedEmail
+      ? userProfile
+      : await fetchProfile(normalizedEmail);
 
+  if (!activeProf) {
+    activeProf = await upsertProfile({
+      email: normalizedEmail,
+      displayName: normalizedEmail.split("@")[0],
+      location: newListing.location,
+    });
+  }
 
-    const { data, error } = await supabase
-      .from("listings")
-      .insert({
-        title: newListing.title,
-        description: newListing.description,
-        price: newListing.price,
-        category: newListing.category,
-        condition: newListing.condition, // <-- Add this line
-        seller_email: newListing.sellerEmail,
-        image_url: newListing.image,
-        location: newListing.location,
-      })
-      .select()
-      .single();
+  if (activeProf) {
+    setUserProfile(activeProf);
+  }
 
+  // 2. Insert the new listing into Supabase
+  const { data, error } = await supabase
+    .from("listings")
+    .insert({
+      title: newListing.title,
+      description: newListing.description,
+      price: newListing.price,
+      category: newListing.category,
+      condition: newListing.condition,
+      seller_email: normalizedEmail,
+      image_url: newListing.image,
+      location: newListing.location,
+    })
+    .select()
+    .single();
 
-    if (!error && data) {
-      setListings((prev) => [mapRowToListing(data), ...prev]);
-    } else {
-      console.error("Failed to insert listing:", error?.message);
-    }
-  };
+  // 3. Map the returned row WITH activeProf so Buy Now & displayName work immediately
+  if (!error && data) {
+    const profileMap: Record<string, SellerProfile> = activeProf
+      ? { [normalizedEmail]: activeProf }
+      : {};
+    setListings((prev) => [mapRowToListing(data, profileMap), ...prev]);
+  } else {
+    console.error("Failed to insert listing:", error?.message);
+  }
+};
+
 
   const handleToggleSold = async (id: string) => {
     const target = listings.find((item) => item.id === id);

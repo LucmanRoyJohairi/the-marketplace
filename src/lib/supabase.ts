@@ -19,9 +19,19 @@ function formatTimeAgo(dateString: string): string {
   return `${days}d ago`;
 }
 
-export function mapRowToListing(row: Record<string, any>): Listing {
+export function mapRowToListing(
+  row: Record<string, any>,
+  profileMap?: Record<string, SellerProfile>
+): Listing {
   const email: string = row.seller_email || "seller@example.com";
-  const displayName = email.split("@")[0] || "Seller";
+  const normalizedEmail = email.trim().toLowerCase();
+  const profile = profileMap?.[normalizedEmail];
+
+  const fallbackName = email.split("@")[0] || "Seller";
+
+  const joinedYear = profile?.joinedDate
+    ? profile.joinedDate.split(", ").pop() || "2024"
+    : "2024";
 
   return {
     id: row.id,
@@ -36,13 +46,16 @@ export function mapRowToListing(row: Record<string, any>): Listing {
     condition: row.condition || "Good",
     status: row.status === "sold" ? "sold" : "active",
     seller: {
-      name: displayName,
+      name: profile?.displayName || fallbackName,
       email,
-      joinedYear: "2024",
-      rating: "5.0",
+      joinedYear,
+      rating: profile?.rating || "5.0",
+      stripeAccountId: profile?.stripeAccountId || null,
+      stripeOnboarded: Boolean(profile?.stripeOnboarded),
     },
   };
 }
+
 
 export interface SellerProfile {
   email: string;
@@ -53,6 +66,7 @@ export interface SellerProfile {
   stripeAccountId?: string | null;
   stripeOnboarded?: boolean;
 }
+
 
 export async function fetchProfile(email: string): Promise<SellerProfile | null> {
   if (!email) return null;
@@ -118,5 +132,7 @@ export async function upsertProfile(profile: {
       day: "numeric",
       year: "numeric",
     }),
+    stripeAccountId: data.stripe_account_id || null,
+    stripeOnboarded: Boolean(data.stripe_onboarded),
   };
 }

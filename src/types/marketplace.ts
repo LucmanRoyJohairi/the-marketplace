@@ -36,3 +36,14 @@ export interface Listing {
   seller: Seller;
   status?: "active" | "sold";
 }
+
+
+export interface Seller {
+  name: string;
+  email?: string;
+  joinedYear: string;
+  rating: string;
+  avatar?: string;
+  stripeAccountId?: string | null;
+  stripeOnboarded?: boolean;
+}
