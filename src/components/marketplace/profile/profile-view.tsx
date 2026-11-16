@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Listing } from "@/types/marketplace";
-import { Badge } from "@/components/ui/badge";
-import { ShieldCheck } from "lucide-react";
 import { SellerProfile, upsertProfile } from "@/lib/supabase";
 import { ProfileInfoCard } from "./profile-info-card";
+import { StripeConnectCard } from "./stripe-connect-card";
 import { ProfileStatsCard } from "./profile-stats-card";
 import { ProfileQuickActions } from "./profile-quick-actions";
 
@@ -94,32 +93,15 @@ export function ProfileView({
             onStartEdit={() => setIsEditing(true)}
             onCancelEdit={() => setIsEditing(false)}
             onSaveProfile={handleSaveProfile}
-        />
+          />
 
-
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  Local Pickup &amp; Messaging Ready
-                </p>
-                <p className="text-xs text-slate-500">
-                  {isSaving
-                    ? "Saving changes to Supabase..."
-                    : "Buyers can message you directly on active listings"}
-                </p>
-              </div>
-            </div>
-            <Badge
-              variant="secondary"
-              className="bg-blue-50 text-blue-700 border border-blue-100 shrink-0"
-            >
-              Verified
-            </Badge>
-          </div>
+          <StripeConnectCard
+            defaultEmail={profile?.email || userEmail}
+            displayName={displayName}
+            location={profile?.location || location}
+            stripeAccountId={profile?.stripeAccountId}
+            stripeOnboarded={profile?.stripeOnboarded}
+          />
         </div>
 
         <div className="lg:col-span-5 space-y-5">

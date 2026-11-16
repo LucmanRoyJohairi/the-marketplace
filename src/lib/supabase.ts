@@ -44,13 +44,14 @@ export function mapRowToListing(row: Record<string, any>): Listing {
   };
 }
 
-
 export interface SellerProfile {
   email: string;
   displayName: string;
   location: string;
   rating: string;
   joinedDate: string;
+  stripeAccountId?: string | null;
+  stripeOnboarded?: boolean;
 }
 
 export async function fetchProfile(email: string): Promise<SellerProfile | null> {
@@ -76,6 +77,8 @@ export async function fetchProfile(email: string): Promise<SellerProfile | null>
           year: "numeric",
         })
       : "January 2024",
+    stripeAccountId: data.stripe_account_id || null,
+    stripeOnboarded: Boolean(data.stripe_onboarded),
   };
 }
 

@@ -45,14 +45,33 @@ export default function MarketplacePage() {
 
   // 2. Restore saved email & fetch profile on mount:
   useEffect(() => {
-    const savedEmail = localStorage.getItem("marketplace_user_email");
-    if (savedEmail) {
-      setCurrentUserEmail(savedEmail);
-      fetchProfile(savedEmail).then((prof) => {
+    const params = new URLSearchParams(window.location.search);
+    const stripeReturn = params.get("stripe_connect");
+    const returnEmail = params.get("email");
+
+    const activeEmail =
+      returnEmail || localStorage.getItem("marketplace_user_email") || "";
+
+    if (activeEmail) {
+      setCurrentUserEmail(activeEmail);
+      localStorage.setItem("marketplace_user_email", activeEmail);
+
+      const load = async () => {
+        if (stripeReturn === "return") {
+          await fetch(
+            `/api/stripe/connect/status?email=${encodeURIComponent(activeEmail)}`
+          );
+          // Clean URL query params
+          window.history.replaceState({}, "", "/");
+        }
+        const prof = await fetchProfile(activeEmail);
         if (prof) setUserProfile(prof);
-      });
+      };
+
+      load();
     }
   }, []);
+
 
   
 
