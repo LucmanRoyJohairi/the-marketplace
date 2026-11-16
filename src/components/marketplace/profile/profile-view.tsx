@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Listing } from "@/types/marketplace";
-import { SellerProfile, upsertProfile } from "@/lib/supabase";
+import { SellerProfile, switchOrCreateProfile, upsertProfile } from "@/lib/supabase";
 import { ProfileInfoCard } from "./profile-info-card";
 import { StripeConnectCard } from "./stripe-connect-card";
 import { ProfileStatsCard } from "./profile-stats-card";
@@ -71,6 +71,18 @@ export function ProfileView({
     setIsSaving(false);
   };
 
+  const handleQuickSwitch = async (targetEmail: string) => {
+    setIsSaving(true);
+    const switched = await switchOrCreateProfile(targetEmail, location);
+    if (switched) {
+      localStorage.setItem("marketplace_user_email", switched.email);
+      setDisplayName(switched.displayName);
+      onProfileSaved(switched);
+      setIsEditing(false);
+    }
+    setIsSaving(false);
+  };
+
   return (
     <div className="w-full max-w-5xl mx-auto">
       <div className="mb-6">
@@ -93,6 +105,7 @@ export function ProfileView({
             onStartEdit={() => setIsEditing(true)}
             onCancelEdit={() => setIsEditing(false)}
             onSaveProfile={handleSaveProfile}
+            onQuickSwitch={handleQuickSwitch}
           />
 
           <StripeConnectCard

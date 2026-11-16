@@ -37,6 +37,8 @@ export default function MarketplacePage() {
   const [userProfile, setUserProfile] = useState<SellerProfile | null>(null);
   const activeEmail = (userProfile?.email || currentUserEmail).trim().toLowerCase();
 
+  
+
   const userListings = listings.filter(
     (item) =>
       activeEmail !== "" &&
@@ -76,7 +78,10 @@ export default function MarketplacePage() {
     }
 
     const activeEmail =
-      returnEmail || localStorage.getItem("marketplace_user_email") || "";
+      returnEmail ||
+      localStorage.getItem("marketplace_user_email") ||
+      "laxus@test.com";
+
 
     if (activeEmail) {
       setCurrentUserEmail(activeEmail);

@@ -16,6 +16,7 @@ interface ProfileInfoCardProps {
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onSaveProfile: (name: string, email: string, location: string) => void;
+  onQuickSwitch?: (email: string) => void;
 }
 
 export function ProfileInfoCard({
@@ -27,6 +28,7 @@ export function ProfileInfoCard({
   onStartEdit,
   onCancelEdit,
   onSaveProfile,
+  onQuickSwitch,
 }: ProfileInfoCardProps) {
   const [draftName, setDraftName] = useState(displayName);
   const [draftEmail, setDraftEmail] = useState(userEmail);
@@ -182,6 +184,36 @@ export function ProfileInfoCard({
           </div>
         </div>
       </div>
+
+      {/* Quick Account Switcher Bar for Testing */}
+      {onQuickSwitch && (
+        <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs text-slate-400">Testing accounts:</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onQuickSwitch("laxus@test.com")}
+              className={`text-xs px-2.5 py-1 rounded-full font-medium border transition-colors ${
+                userEmail.toLowerCase() === "laxus@test.com"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+              }`}
+            >
+              Demo Seller (Stripe Ready)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const randomNum = Math.floor(100 + Math.random() * 900);
+                onQuickSwitch(`seller${randomNum}@test.com`);
+              }}
+              className="text-xs px-2.5 py-1 rounded-full font-medium bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition-colors"
+            >
+              + Fresh Test Seller
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

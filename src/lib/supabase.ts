@@ -136,3 +136,30 @@ export async function upsertProfile(profile: {
     stripeOnboarded: Boolean(data.stripe_onboarded),
   };
 }
+
+export async function switchOrCreateProfile(
+  email: string,
+  defaultLocation = "Palo Alto, CA"
+): Promise<SellerProfile | null> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) return null;
+
+  // 1. Check if this email already exists in Supabase
+  const existing = await fetchProfile(normalizedEmail);
+  if (existing) {
+    return existing;
+  }
+
+  // 2. Otherwise create a fresh profile row
+  const derivedName = normalizedEmail
+  .split("@")[0]
+  .replace(/[._-]/g, " ")
+  .replace(/\b\w/g, (c) => c.toUpperCase());
+
+
+  return upsertProfile({
+    email: normalizedEmail,
+    displayName: derivedName,
+    location: defaultLocation,
+  });
+}
